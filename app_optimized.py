@@ -53,7 +53,7 @@ def detect_gpu():
     return gpu_info
 
 # Importar módulos optimizados
-from config.settings import initialize_app, UI_CONFIG, MODEL_CONFIG
+from app_config.settings import initialize_app, UI_CONFIG, MODEL_CONFIG
 from utils.data_loader import (
     load_models, load_translations, get_language, set_language,
     get_available_languages, get_class_names_friendly, get_clinical_info,
