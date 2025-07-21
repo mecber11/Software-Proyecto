@@ -1,0 +1,33 @@
+{
+    "mcc_scores": {
+        "MobileNetV2": 0.8011089829993784,
+        "ResNet50": 0.8970058025432516,
+        "EfficientNetB0": 0.8242713478084236
+    },
+    "mcnemar_tests": {
+        "MobileNetV2_vs_ResNet50": {
+            "statistic": 44.091603053435115,
+            "p_value": 3.133626691464997e-11,
+            "b": 27,
+            "c": 104,
+            "significant": true,
+            "interpretation": "Modelo 2 es significativamente mejor (p=0.0000)"
+        },
+        "MobileNetV2_vs_EfficientNetB0": {
+            "statistic": 1.8291139240506329,
+            "p_value": 0.17623224021150952,
+            "b": 70,
+            "c": 88,
+            "significant": false,
+            "interpretation": "No hay diferencia significativa entre modelos (p=0.1762)"
+        },
+        "ResNet50_vs_EfficientNetB0": {
+            "statistic": 27.349593495934958,
+            "p_value": 1.698001365069146e-07,
+            "b": 91,
+            "c": 32,
+            "significant": true,
+            "interpretation": "Modelo 1 es significativamente mejor (p=0.0000)"
+        }
+    }
+}

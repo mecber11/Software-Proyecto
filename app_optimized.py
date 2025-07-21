@@ -1111,44 +1111,50 @@ def display_download_section(predictions, image_info, probability_fig=None, cons
             patient_id = st.text_input(t("patient_id"))
     
     if st.button(t("generate_pdf")):
-        patient_info = {'name': patient_name, 'id': patient_id}
-        
-        with st.spinner(t("generating_report")):
-            # Cargar datos de comparación híbrida si están disponibles
-            try:
-                from utils.data_loader import load_hybrid_comparison_results
-                hybrid_comparison_data = load_hybrid_comparison_results()
-            except Exception as e:
-                st.warning(f"No se pudieron cargar datos híbridos: {e}")
-                hybrid_comparison_data = None
+        # Verificar si estamos en Codespace
+        if os.environ.get('CODESPACES') or os.environ.get('GITHUB_CODESPACES'):
+            st.warning("⚠️ Generación de PDF deshabilitada en GitHub Codespaces")
+            st.info("La generación de PDF no está disponible en entornos Codespace debido a limitaciones de archivos temporales.")
+            st.info("💡 Sugerencia: Ejecuta la aplicación localmente para generar PDFs.")
+        else:
+            patient_info = {'name': patient_name, 'id': patient_id}
             
-            # Mostrar información de contexto
-            import os
-            
-            pdf_content = generate_pdf_report(
-                predictions, 
-                image_info, 
-                patient_info, 
-                t, 
-                None,
-                probability_fig, 
-                consensus_fig,
-                original_image,
-                enhanced_image,
-                hybrid_training_info=None,  # Agregar si está disponible
-                hybrid_comparison_data=hybrid_comparison_data
-            )
-            
-            if pdf_content:
-                st.success(t("report_generated"))
-                st.info(f"PDF generado: {len(pdf_content):,} bytes ({len(pdf_content)/1024/1024:.1f} MB)")
+            with st.spinner(t("generating_report")):
+                # Cargar datos de comparación híbrida si están disponibles
+                try:
+                    from utils.data_loader import load_hybrid_comparison_results
+                    hybrid_comparison_data = load_hybrid_comparison_results()
+                except Exception as e:
+                    st.warning(f"No se pudieron cargar datos híbridos: {e}")
+                    hybrid_comparison_data = None
                 
-                # Crear enlace de descarga
-                filename = f"reporte_sipakmed_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-                download_link = create_download_link(pdf_content, filename)
-                st.markdown(download_link, unsafe_allow_html=True)
-            else:
-                st.error(f"{t('pdf_error')} Error en la generación")
+                # Mostrar información de contexto
+                import os
+                
+                pdf_content = generate_pdf_report(
+                    predictions, 
+                    image_info, 
+                    patient_info, 
+                    t, 
+                    None,
+                    probability_fig, 
+                    consensus_fig,
+                    original_image,
+                    enhanced_image,
+                    hybrid_training_info=None,  # Agregar si está disponible
+                    hybrid_comparison_data=hybrid_comparison_data
+                )
+                
+                if pdf_content:
+                    st.success(t("report_generated"))
+                    st.info(f"PDF generado: {len(pdf_content):,} bytes ({len(pdf_content)/1024/1024:.1f} MB)")
+                    
+                    # Crear enlace de descarga
+                    filename = f"reporte_sipakmed_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+                    download_link = create_download_link(pdf_content, filename)
+                    st.markdown(download_link, unsafe_allow_html=True)
+                else:
+                    st.error(f"{t('pdf_error')} Error en la generación")
 
 # ============================================================================
 # FUNCIÓN PRINCIPAL

@@ -957,18 +957,16 @@ class PDFReportGenerator:
                     mcnemar_fig.write_image(img_buffer, format='png', width=800, height=600)
                     img_buffer.seek(0)
                     
-                    with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
-                        tmp_file.write(img_buffer.getvalue())
-                        tmp_file.flush()
-                        
-                        try:
-                            img = RLImage(tmp_file.name, width=6*inch, height=4.5*inch)
-                            elements.append(img)
-                            elements.append(Spacer(1, 20))
-                        except Exception as e:
-                            logger.error(f"Error agregando imagen McNemar al PDF: {e}")
-                        finally:
-                            os.unlink(tmp_file.name)
+                    try:
+                        # Usar buffer de memoria directamente en lugar de archivo temporal
+                        img_buffer.seek(0)
+                        img = RLImage(img_buffer, width=6*inch, height=4.5*inch)
+                        elements.append(img)
+                        elements.append(Spacer(1, 20))
+                    except Exception as e:
+                        logger.error(f"Error agregando imagen McNemar al PDF: {e}")
+                        elements.append(Paragraph("Error al cargar gráfico McNemar", self.styles['Normal']))
+                        elements.append(Spacer(1, 20))
                 
                 # Tabla de resultados McNemar
                 mcnemar_data = [['Comparación', 'Estadístico', 'p-valor', 'Significativo']]
@@ -1010,18 +1008,16 @@ class PDFReportGenerator:
                     matews_fig.write_image(img_buffer, format='png', width=800, height=600)
                     img_buffer.seek(0)
                     
-                    with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
-                        tmp_file.write(img_buffer.getvalue())
-                        tmp_file.flush()
-                        
-                        try:
-                            img = RLImage(tmp_file.name, width=6*inch, height=4.5*inch)
-                            elements.append(img)
-                            elements.append(Spacer(1, 20))
-                        except Exception as e:
-                            logger.error(f"Error agregando imagen Matews al PDF: {e}")
-                        finally:
-                            os.unlink(tmp_file.name)
+                    try:
+                        # Usar buffer de memoria directamente en lugar de archivo temporal
+                        img_buffer.seek(0)
+                        img = RLImage(img_buffer, width=6*inch, height=4.5*inch)
+                        elements.append(img)
+                        elements.append(Spacer(1, 20))
+                    except Exception as e:
+                        logger.error(f"Error agregando imagen Matews al PDF: {e}")
+                        elements.append(Paragraph("Error al cargar gráfico Matews", self.styles['Normal']))
+                        elements.append(Spacer(1, 20))
                 
                 # Crear matriz Matews (deshabilitada temporalmente por problemas con archivos temporales)
                 elements.append(Paragraph("Matriz de Comparación Matews", self.styles['CustomSubtitle']))
