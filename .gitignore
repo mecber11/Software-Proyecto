@@ -6,7 +6,7 @@
 # ================================
 # MODELOS ENTRENADOS (PESADOS)
 # ================================
-data/models/*.h5
+# data/models/*.h5  # Ahora manejado por Git LFS
 data/models/*.pth
 data/models/*.pt
 hybrid_training_results/models/*.pth
