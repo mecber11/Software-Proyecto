@@ -34,7 +34,7 @@ scipy>=1.9.0
 # ================================
 # PROCESAMIENTO DE IMÁGENES
 # ================================
-opencv-python-headless==4.8.1.78
+# opencv-python-headless==4.8.1.78  # Temporal: deshabilitado para Streamlit Cloud
 Pillow==11.3.0
 
 # ================================

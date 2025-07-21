@@ -2,8 +2,16 @@
 Módulo de predicciones y preprocesamiento ML para SIPaKMeD
 """
 import numpy as np
-import cv2
 from PIL import Image
+
+# Importación condicional de OpenCV para evitar conflictos
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except ImportError:
+    CV2_AVAILABLE = False
+    import warnings
+    warnings.warn("OpenCV no disponible. Algunas funciones de mejora de imagen estarán deshabilitadas.")
 import tensorflow as tf
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input as mobilenet_preprocess
 from tensorflow.keras.applications.resnet50 import preprocess_input as resnet_preprocess
@@ -24,6 +32,15 @@ def enhance_cervical_cell_image(image):
             img_array = np.array(image)
         else:
             img_array = image
+        
+        if not CV2_AVAILABLE:
+            # Mejora básica sin OpenCV
+            logger.warning("OpenCV no disponible, usando mejora básica")
+            # Normalizar contraste básico
+            img_float = img_array.astype(np.float32) / 255.0
+            # Aumentar contraste
+            enhanced = np.clip((img_float - 0.5) * 1.2 + 0.5, 0, 1)
+            return (enhanced * 255).astype(np.uint8)
         
         # Convertir a escala de grises si es necesario
         if len(img_array.shape) == 3:
