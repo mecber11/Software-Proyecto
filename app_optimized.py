@@ -1129,7 +1129,6 @@ def display_download_section(predictions, image_info, probability_fig=None, cons
                     hybrid_comparison_data = None
                 
                 # Mostrar información de contexto
-                import os
                 
                 pdf_content = generate_pdf_report(
                     predictions, 
