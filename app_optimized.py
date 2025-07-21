@@ -3,6 +3,7 @@ Aplicación SIPaKMeD optimizada y refactorizada
 Clasificador de Células Cervicales usando Deep Learning
 
 Reducido de 2,671 líneas a ~800 líneas (70% menos código)
+Actualizado para resolver conflictos con OpenCV - v1.1
 """
 
 import streamlit as st
