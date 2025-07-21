@@ -1,0 +1,52 @@
+=== REPORTE DE ENTRENAMIENTO - EfficientNetB0 ===
+
+Configuracion:
+  - Epochs totales: 10
+  - Batch size: 32
+  - Learning rate: 0.0001
+  - Imagen size: 224x224
+
+Resultados:
+  - Tiempo entrenamiento: 767.1s
+  - Mejor accuracy validacion: 0.8587
+  - Mejor loss validacion: 1.4117
+  - Accuracy final: 0.8587
+
+Reporte por clase:
+  Celulas Displasicas:
+    - Precision: 0.8619
+    - Recall: 0.8702
+    - F1-score: 0.8660
+    - Soporte: 208.0
+
+  Celulas Koilocitoticas:
+    - Precision: 0.8159
+    - Recall: 0.7700
+    - F1-score: 0.7923
+    - Soporte: 213.0
+
+  Celulas Metaplasicas:
+    - Precision: 0.8543
+    - Recall: 0.7981
+    - F1-score: 0.8252
+    - Soporte: 213.0
+
+  Celulas Parabasales:
+    - Precision: 0.9818
+    - Recall: 0.9050
+    - F1-score: 0.9419
+    - Soporte: 179.0
+
+  Celulas Superficiales-Intermedias:
+    - Precision: 0.8087
+    - Recall: 0.9688
+    - F1-score: 0.8815
+    - Soporte: 192.0
+
+Metricas generales:
+  - Macro avg precision: 0.8645
+  - Macro avg recall: 0.8624
+  - Macro avg f1-score: 0.8614
+  - Weighted avg precision: 0.8617
+  - Weighted avg recall: 0.8587
+  - Weighted avg f1-score: 0.8582

@@ -1,0 +1,52 @@
+=== REPORTE DE ENTRENAMIENTO - ResNet50 ===
+
+Configuracion:
+  - Epochs totales: 10
+  - Batch size: 32
+  - Learning rate: 0.0001
+  - Imagen size: 224x224
+
+Resultados:
+  - Tiempo entrenamiento: 1155.9s
+  - Mejor accuracy validacion: 0.9174
+  - Mejor loss validacion: 1.3118
+  - Accuracy final: 0.9174
+
+Reporte por clase:
+  Celulas Displasicas:
+    - Precision: 0.9505
+    - Recall: 0.9231
+    - F1-score: 0.9366
+    - Soporte: 208.0
+
+  Celulas Koilocitoticas:
+    - Precision: 0.8178
+    - Recall: 0.9061
+    - F1-score: 0.8597
+    - Soporte: 213.0
+
+  Celulas Metaplasicas:
+    - Precision: 0.8916
+    - Recall: 0.8498
+    - F1-score: 0.8702
+    - Soporte: 213.0
+
+  Celulas Parabasales:
+    - Precision: 0.9943
+    - Recall: 0.9665
+    - F1-score: 0.9802
+    - Soporte: 179.0
+
+  Celulas Superficiales-Intermedias:
+    - Precision: 0.9632
+    - Recall: 0.9531
+    - F1-score: 0.9581
+    - Soporte: 192.0
+
+Metricas generales:
+  - Macro avg precision: 0.9235
+  - Macro avg recall: 0.9197
+  - Macro avg f1-score: 0.9210
+  - Weighted avg precision: 0.9201
+  - Weighted avg recall: 0.9174
+  - Weighted avg f1-score: 0.9181

@@ -1,0 +1,52 @@
+=== REPORTE DE ENTRENAMIENTO - MobileNetV2 ===
+
+Configuracion:
+  - Epochs totales: 10
+  - Batch size: 32
+  - Learning rate: 0.0001
+  - Imagen size: 224x224
+
+Resultados:
+  - Tiempo entrenamiento: 767.6s
+  - Mejor accuracy validacion: 0.8408
+  - Mejor loss validacion: 1.4715
+  - Accuracy final: 0.8408
+
+Reporte por clase:
+  Celulas Displasicas:
+    - Precision: 0.8438
+    - Recall: 0.7788
+    - F1-score: 0.8100
+    - Soporte: 208.0
+
+  Celulas Koilocitoticas:
+    - Precision: 0.7435
+    - Recall: 0.8028
+    - F1-score: 0.7720
+    - Soporte: 213.0
+
+  Celulas Metaplasicas:
+    - Precision: 0.8028
+    - Recall: 0.8216
+    - F1-score: 0.8121
+    - Soporte: 213.0
+
+  Celulas Parabasales:
+    - Precision: 0.9268
+    - Recall: 0.8492
+    - F1-score: 0.8863
+    - Soporte: 179.0
+
+  Celulas Superficiales-Intermedias:
+    - Precision: 0.9204
+    - Recall: 0.9635
+    - F1-score: 0.9415
+    - Soporte: 192.0
+
+Metricas generales:
+  - Macro avg precision: 0.8474
+  - Macro avg recall: 0.8432
+  - Macro avg f1-score: 0.8444
+  - Weighted avg precision: 0.8432
+  - Weighted avg recall: 0.8408
+  - Weighted avg f1-score: 0.8411
