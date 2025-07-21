@@ -145,27 +145,41 @@ def download_from_huggingface(model_name: str, destination: Path) -> bool:
         
         filename = MODEL_URLS[model_name]["filename"]
         
-        st.info(f"Descargando {model_name} desde Hugging Face...")
+        st.info(f"🤗 Descargando {model_name} desde Hugging Face Hub...")
+        
+        # Crear barra de progreso
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        status_text.text(f"Iniciando descarga de {filename}...")
         
         downloaded_path = hf_hub_download(
             repo_id=repo_id,
             filename=filename,
             cache_dir=str(destination.parent),
-            force_download=False  # Usar cache si existe
+            force_download=False,  # Usar cache si existe
+            local_dir=str(destination),  # Descargar directamente al destino
+            local_dir_use_symlinks=False
         )
         
-        # Copiar a nuestro directorio
-        import shutil
-        shutil.copy2(downloaded_path, destination / filename)
+        progress_bar.progress(1.0)
+        status_text.text(f"✅ {filename} descargado exitosamente")
         
-        st.success(f"✅ {model_name} descargado desde Hugging Face")
+        st.success(f"✅ {model_name} descargado desde Hugging Face Hub")
         return True
         
     except ImportError:
-        logger.warning("huggingface_hub no instalado, usando descarga directa")
-        return False
+        st.warning("⚠️ huggingface_hub no encontrado. Instalando...")
+        try:
+            import subprocess
+            subprocess.check_call(["pip", "install", "huggingface_hub"])
+            st.success("✅ huggingface_hub instalado. Reinicia la aplicación.")
+            return False
+        except:
+            logger.warning("No se pudo instalar huggingface_hub automáticamente")
+            return False
     except Exception as e:
         logger.error(f"Error descargando de Hugging Face: {e}")
+        st.error(f"Error descargando {model_name}: {str(e)}")
         return False
 
 def check_model_integrity(model_path: Path, expected_md5: str) -> bool:
