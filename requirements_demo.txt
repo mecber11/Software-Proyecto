@@ -1,0 +1,71 @@
+# ===================================================================
+# REQUIREMENTS DEMO - SIPAKMED OPTIMIZADO PARA CODESPACES/STREAMLIT CLOUD
+# Versión ultra-ligera compatible con ambientes limitados
+# ===================================================================
+
+# ================================
+# FRAMEWORK WEB (ESENCIAL)
+# ================================
+streamlit==1.47.0
+
+# ================================
+# MACHINE LEARNING BÁSICO (Solo TensorFlow)
+# ================================
+# TensorFlow CPU optimizado (sin GPU)
+tensorflow-cpu==2.19.0
+
+# ================================
+# PROCESAMIENTO BÁSICO
+# ================================
+numpy==2.1.3
+pandas==2.3.1
+
+# ================================
+# IMÁGENES LIGERO
+# ================================
+Pillow==11.3.0
+# opencv-python-headless es más ligero que opencv-python
+opencv-python-headless==4.12.0
+
+# ================================
+# VISUALIZACIÓN WEB
+# ================================
+plotly==6.2.0
+
+# ================================
+# UTILIDADES MÍNIMAS
+# ================================
+requests>=2.31.0
+
+# ================================
+# NOTAS IMPORTANTES
+# ================================
+# 
+# ESTE REQUIREMENTS ES PARA:
+# ✅ GitHub Codespaces (funciona bien)
+# ✅ Streamlit Cloud (puede funcionar con limitaciones)
+# ✅ CPU-only environments
+# ✅ Low memory environments (<1GB RAM)
+#
+# NO INCLUYE:
+# ❌ PyTorch (demasiado pesado)
+# ❌ scikit-learn (no esencial para demo)
+# ❌ reportlab (genera PDFs pesados)
+# ❌ opencv-python full (usa headless)
+# ❌ matplotlib/seaborn (plotly es suficiente)
+#
+# INSTALACIÓN:
+# pip install -r requirements_demo.txt
+#
+# EJECUTAR:
+# streamlit run app_demo.py
+#
+# MEMORIA ESTIMADA:
+# - Carga inicial: ~300MB
+# - Con modelo: ~500MB  
+# - Máximo uso: ~700MB
+#
+# COMPATIBILIDAD:
+# ✅ GitHub Codespaces: 8GB RAM (sobra espacio)
+# ⚠️ Streamlit Cloud: 1GB RAM (justo pero posible)
+# ================================

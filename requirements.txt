@@ -1,0 +1,64 @@
+# ===================================================================
+# REQUIREMENTS.TXT - SIPAKMED WEB VERSION
+# Aplicación Web Ligera para Clasificación de Células Cervicales
+# Generado: 2025-07-21
+# ===================================================================
+
+# ================================
+# FRAMEWORK WEB PRINCIPAL
+# ================================
+streamlit==1.47.0
+
+# ================================
+# MACHINE LEARNING (Solo TensorFlow para modelos clásicos)
+# ================================
+tensorflow==2.19.0
+
+# Scikit-learn para métricas y análisis
+scikit-learn>=1.3.0
+
+# ================================
+# PROCESAMIENTO DE DATOS
+# ================================
+numpy==2.1.3
+pandas==2.3.1
+scipy>=1.9.0
+
+# ================================
+# PROCESAMIENTO DE IMÁGENES
+# ================================
+opencv-python==4.12.0
+Pillow==11.3.0
+
+# ================================
+# VISUALIZACIÓN WEB
+# ================================
+plotly==6.2.0
+matplotlib==3.10.3
+seaborn==0.13.2
+
+# ================================
+# GENERACIÓN DE REPORTES PDF
+# ================================
+reportlab==4.4.2
+
+# ================================
+# UTILIDADES BÁSICAS
+# ================================
+h5py>=3.8.0
+colorama>=0.4.6
+
+# ================================
+# INSTALACIÓN
+# ================================
+# pip install -r requirements.txt
+# streamlit run app_optimized.py
+#
+# NOTA: Esta versión NO incluye:
+# - PyTorch (para reducir tamaño)
+# - Modelos híbridos (solo clásicos TensorFlow)
+# - Herramientas de entrenamiento
+# - Datasets pesados
+#
+# Para funcionalidad completa, usar SIPaKMeD-Training
+# ================================

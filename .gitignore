@@ -1,0 +1,95 @@
+# ===================================================================
+# GITIGNORE - SIPAKMED WEB VERSION
+# Para aplicación web ligera sin archivos pesados
+# ===================================================================
+
+# ================================
+# MODELOS ENTRENADOS (PESADOS)
+# ================================
+data/models/*.h5
+data/models/*.pth
+data/models/*.pt
+hybrid_training_results/models/*.pth
+hybrid_training_results/models/*.pt
+*.pkl
+*.joblib
+
+# ================================
+# RESULTADOS DE ENTRENAMIENTO
+# ================================
+data/predictions/*.npy
+hybrid_training_results/
+test_results/
+reports/figures/
+reports/metrics/
+reports/hybrid_statistical_analysis/
+
+# ================================
+# LOGS Y ARCHIVOS TEMPORALES
+# ================================
+*.log
+training.log
+*.pdf
+debug_*.py
+test_*.pdf
+nul
+
+# ================================
+# ENTORNO VIRTUAL
+# ================================
+.venv/
+venv/
+env/
+.env
+
+# ================================
+# ARCHIVOS DE SISTEMA
+# ================================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.DS_Store
+Thumbs.db
+*.egg-info/
+dist/
+build/
+
+# ================================
+# JUPYTER NOTEBOOKS
+# ================================
+.ipynb_checkpoints/
+*.ipynb
+
+# ================================
+# EDITORS/IDE
+# ================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*.vim
+
+# ================================
+# STREAMLIT CACHE
+# ================================
+.streamlit/
+
+# ================================
+# DATASETS Y ARCHIVOS GRANDES
+# ================================
+dataset/
+data/raw/
+data/processed/
+*.zip
+*.tar.gz
+*.rar
+
+# ================================
+# CONFIGURACIÓN LOCAL
+# ================================
+.env.local
+config_local.py
+secrets.toml
