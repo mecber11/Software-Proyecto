@@ -95,7 +95,13 @@ def preprocess_image(image, model_name):
             img_rgb = img_array[:,:,:3]
         
         # Redimensionar a 224x224
-        img_resized = cv2.resize(img_rgb, (224, 224))
+        if CV2_AVAILABLE:
+            img_resized = cv2.resize(img_rgb, (224, 224))
+        else:
+            # Fallback usando PIL
+            pil_img = Image.fromarray(img_rgb.astype('uint8'))
+            pil_resized = pil_img.resize((224, 224), Image.Resampling.LANCZOS)
+            img_resized = np.array(pil_resized)
         
         # Expandir dimensiones para batch
         img_batch = np.expand_dims(img_resized, axis=0)
@@ -117,7 +123,15 @@ def preprocess_image(image, model_name):
         logger.error(f"Error en preprocesamiento para {model_name}: {e}")
         # Preprocesamiento básico en caso de error
         img_array = np.array(image) if isinstance(image, Image.Image) else image
-        img_resized = cv2.resize(img_array, (224, 224))
+        if CV2_AVAILABLE:
+            img_resized = cv2.resize(img_array, (224, 224))
+        else:
+            # Fallback usando PIL
+            if isinstance(image, Image.Image):
+                img_resized = np.array(image.resize((224, 224), Image.Resampling.LANCZOS))
+            else:
+                pil_img = Image.fromarray(img_array.astype('uint8'))
+                img_resized = np.array(pil_img.resize((224, 224), Image.Resampling.LANCZOS))
         return np.expand_dims(img_resized.astype(np.float32) / 255.0, axis=0)
 
 def predict_cervical_cells(image, models):
