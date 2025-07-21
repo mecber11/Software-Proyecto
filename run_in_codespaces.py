@@ -42,10 +42,13 @@ def setup_codespaces_environment():
         
         if models_ready:
             st.success("✅ Ambiente configurado correctamente")
+            st.markdown("### 🎯 La aplicación está lista para usar")
+            st.markdown("**Para iniciar la aplicación, ejecuta este comando en el terminal:**")
+            st.code("streamlit run SIPaKMeD-Web/app_optimized.py", language="bash")
+            st.markdown("O si estás en la carpeta SIPaKMeD-Web:")
+            st.code("streamlit run app_optimized.py", language="bash")
             
-            if st.button("🚀 Iniciar Aplicación SIPaKMeD", type="primary"):
-                # Redirigir a la aplicación principal
-                st.switch_page("app_optimized.py")
+            st.info("💡 **Tip:** Detén este script (Ctrl+C) y ejecuta el comando de arriba para abrir la aplicación principal.")
         else:
             st.warning("⚠️ Es necesario descargar los modelos para continuar")
             
