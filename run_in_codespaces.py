@@ -35,7 +35,7 @@ def setup_codespaces_environment():
     
     # Importar herramientas de descarga
     try:
-        from utils.model_downloader import setup_models_for_codespaces
+        from app_utils.model_downloader import setup_models_for_codespaces
         
         # Configurar modelos
         models_ready = setup_models_for_codespaces()

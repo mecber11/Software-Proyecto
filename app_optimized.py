@@ -54,25 +54,25 @@ def detect_gpu():
 
 # Importar módulos optimizados
 from app_config.settings import initialize_app, UI_CONFIG, MODEL_CONFIG
-from utils.data_loader import (
+from app_utils.data_loader import (
     load_models, load_translations, get_language, set_language,
     get_available_languages, get_class_names_friendly, get_clinical_info,
     load_training_images, load_hybrid_training_results,
     load_hybrid_comparison_results
 )
-from utils.ui_components import (
+from app_utils.ui_components import (
     load_custom_css, display_header, display_metrics_row,
     display_system_ready_message, display_waiting_message,
     display_image_info, display_model_results_cards,
     display_error_message, display_footer
 )
-from utils.ml_predictions import (
+from app_utils.ml_predictions import (
     enhance_cervical_cell_image, predict_cervical_cells, calculate_consensus
 )
-from utils.hybrid_integration import (
+from app_utils.hybrid_integration import (
     get_hybrid_predictions, is_hybrid_available, display_hybrid_info_in_sidebar
 )
-from utils.pdf_generator import generate_pdf_report, create_download_link
+from app_utils.pdf_generator import generate_pdf_report, create_download_link
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
@@ -1116,7 +1116,7 @@ def display_download_section(predictions, image_info, probability_fig=None, cons
         with st.spinner(t("generating_report")):
             # Cargar datos de comparación híbrida si están disponibles
             try:
-                from utils.data_loader import load_hybrid_comparison_results
+                from app_utils.data_loader import load_hybrid_comparison_results
                 hybrid_comparison_data = load_hybrid_comparison_results()
             except Exception as e:
                 st.warning(f"No se pudieron cargar datos híbridos: {e}")
@@ -1185,7 +1185,7 @@ def main():
             # Contar modelos totales (TensorFlow + híbridos)
             total_models = len(models)
             if is_hybrid_available():
-                from utils.hybrid_integration import get_hybrid_model_info
+                from app_utils.hybrid_integration import get_hybrid_model_info
                 hybrid_info = get_hybrid_model_info()
                 total_models += len(hybrid_info)
             
@@ -1393,7 +1393,7 @@ if __name__ == "__main__":
         # Cargar modelos básicos
         st.markdown("### 🤖 Sistema de Inteligencia Artificial")
         try:
-            from utils.data_loader import load_models
+            from app_utils.data_loader import load_models
             models = load_models()
             if models:
                 st.success(f"✅ {len(models)} modelos cargados exitosamente")
@@ -1425,7 +1425,7 @@ if __name__ == "__main__":
                     # Predicción básica
                     st.markdown("#### 🔍 Análisis")
                     try:
-                        from utils.ml_predictions import predict_cervical_cells
+                        from app_utils.ml_predictions import predict_cervical_cells
                         predictions = predict_cervical_cells(original_image, models)
                         
                         if predictions:
