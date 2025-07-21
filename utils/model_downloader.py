@@ -13,44 +13,81 @@ import hashlib
 
 logger = logging.getLogger(__name__)
 
-# URLs de modelos (subir a Google Drive, Hugging Face, o similar)
+# URLs de modelos - TODOS los 5 modelos (3 clásicos + 2 híbridos)
 MODEL_URLS = {
+    # Modelos Clásicos TensorFlow (.h5)
     "MobileNetV2": {
         "url": "https://drive.google.com/uc?id=TU_GOOGLE_DRIVE_ID_MOBILENET",
         "filename": "sipakmed_MobileNetV2.h5",
         "size_mb": 18,
-        "md5": "hash_del_modelo_mobilenet"  # Para verificar integridad
+        "type": "tensorflow",
+        "framework": "TensorFlow"
     },
     "ResNet50": {
         "url": "https://drive.google.com/uc?id=TU_GOOGLE_DRIVE_ID_RESNET",
         "filename": "sipakmed_ResNet50.h5", 
         "size_mb": 104,
-        "md5": "hash_del_modelo_resnet"
+        "type": "tensorflow",
+        "framework": "TensorFlow"
     },
     "EfficientNetB0": {
         "url": "https://drive.google.com/uc?id=TU_GOOGLE_DRIVE_ID_EFFICIENTNET",
         "filename": "sipakmed_EfficientNetB0.h5",
         "size_mb": 25,
-        "md5": "hash_del_modelo_efficientnet"
+        "type": "tensorflow",
+        "framework": "TensorFlow"
+    },
+    
+    # Modelos Híbridos PyTorch (.pth)
+    "HybridEnsemble": {
+        "url": "https://drive.google.com/uc?id=TU_GOOGLE_DRIVE_ID_HYBRID_ENSEMBLE",
+        "filename": "ensemble_best.pth",
+        "size_mb": 173,  # Tamaño aproximado
+        "type": "pytorch",
+        "framework": "PyTorch",
+        "architecture": "HybridEnsemble",
+        "description": "Fusión inteligente ResNet50+MobileNetV2+EfficientNet con atención"
+    },
+    "HybridMultiScale": {
+        "url": "https://drive.google.com/uc?id=TU_GOOGLE_DRIVE_ID_HYBRID_MULTISCALE", 
+        "filename": "multiscale_best.pth",
+        "size_mb": 65,   # Tamaño aproximado
+        "type": "pytorch", 
+        "framework": "PyTorch",
+        "architecture": "HybridMultiScale",
+        "description": "Arquitectura multi-escala con atención espacial"
     }
 }
 
 # URLs alternativos (Hugging Face Hub - recomendado)
 HUGGINGFACE_MODELS = {
-    "MobileNetV2": "tu-usuario/sipakmed-mobilenetv2",
-    "ResNet50": "tu-usuario/sipakmed-resnet50", 
-    "EfficientNetB0": "tu-usuario/sipakmed-efficientnetb0"
+    # Modelos Clásicos
+    "MobileNetV2": "JDAVIDT97/sipakmed-mobilenetv2",
+    "ResNet50": "JDAVIDT97/sipakmed-resnet50", 
+    "EfficientNetB0": "JDAVIDT97/sipakmed-efficientnetb0",
+    
+    # Modelos Híbridos  
+    "HybridEnsemble": "JDAVIDT97/sipakmed-hybrid-ensemble",
+    "HybridMultiScale": "JDAVIDT97/sipakmed-hybrid-multiscale"
 }
 
-def get_models_directory():
-    """Obtener directorio donde guardar modelos"""
-    # En Codespaces o local
+def get_models_directory(model_type="tensorflow"):
+    """Obtener directorio donde guardar modelos según el tipo"""
+    # Directorio base
     if os.path.exists("/workspaces"):
         # Estamos en Codespaces
-        models_dir = Path("/workspaces/sipakmed-web/data/models")
+        base_dir = Path("/workspaces/sipakmed-web")
     else:
         # Local o otro ambiente
-        models_dir = Path("data/models")
+        base_dir = Path(".")
+    
+    # Subdirectorios según tipo de modelo
+    if model_type == "tensorflow":
+        models_dir = base_dir / "data" / "models"
+    elif model_type == "pytorch": 
+        models_dir = base_dir / "hybrid_training_results" / "models"
+    else:
+        models_dir = base_dir / "models"  # Fallback
     
     models_dir.mkdir(parents=True, exist_ok=True)
     return models_dir
@@ -144,13 +181,14 @@ def check_model_integrity(model_path: Path, expected_md5: str) -> bool:
         return False
 
 def download_model(model_name: str, force_download: bool = False) -> Optional[Path]:
-    """Descargar un modelo específico"""
+    """Descargar un modelo específico (TensorFlow o PyTorch)"""
     if model_name not in MODEL_URLS:
         logger.error(f"Modelo desconocido: {model_name}")
         return None
     
-    models_dir = get_models_directory()
     model_info = MODEL_URLS[model_name]
+    model_type = model_info.get("type", "tensorflow")
+    models_dir = get_models_directory(model_type)
     model_path = models_dir / model_info["filename"]
     
     # Verificar si el modelo ya existe y es válido

@@ -1,0 +1,4 @@
+# Este directorio almacenará los modelos TensorFlow clásicos descargados automáticamente
+# - sipakmed_MobileNetV2.h5
+# - sipakmed_ResNet50.h5  
+# - sipakmed_EfficientNetB0.h5

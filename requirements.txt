@@ -10,9 +10,16 @@
 streamlit==1.47.0
 
 # ================================
-# MACHINE LEARNING (Solo TensorFlow para modelos clásicos)
+# MACHINE LEARNING Y DEEP LEARNING (Completo)
 # ================================
+
+# TensorFlow (Modelos Clásicos)
 tensorflow==2.19.0
+
+# PyTorch (Modelos Híbridos) - CPU version para Codespaces
+torch>=2.0.0
+torchvision>=0.15.0
+# Para Codespaces usar: pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
 # Scikit-learn para métricas y análisis
 scikit-learn>=1.3.0
