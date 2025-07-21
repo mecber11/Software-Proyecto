@@ -17,21 +17,21 @@ logger = logging.getLogger(__name__)
 MODEL_URLS = {
     # Modelos Clásicos TensorFlow (.h5)
     "MobileNetV2": {
-        "url": "https://drive.google.com/uc?id=TU_GOOGLE_DRIVE_ID_MOBILENET",
+        "url": "https://drive.google.com/file/d/1hTw08J2jBp_uKczIdgNF5UNKQPHh7f4g/view?usp=drive_link",
         "filename": "sipakmed_MobileNetV2.h5",
         "size_mb": 18,
         "type": "tensorflow",
         "framework": "TensorFlow"
     },
     "ResNet50": {
-        "url": "https://drive.google.com/uc?id=TU_GOOGLE_DRIVE_ID_RESNET",
+        "url": "https://drive.google.com/file/d/15TdMz4Pk7M37SjeaYujQryLljLvmhmfG/view?usp=drive_link",
         "filename": "sipakmed_ResNet50.h5", 
         "size_mb": 104,
         "type": "tensorflow",
         "framework": "TensorFlow"
     },
     "EfficientNetB0": {
-        "url": "https://drive.google.com/uc?id=TU_GOOGLE_DRIVE_ID_EFFICIENTNET",
+        "url": "https://drive.google.com/file/d/1pYvOmxNWHN2x8XYce_OK4C39z-fxTfo7/view?usp=drive_link",
         "filename": "sipakmed_EfficientNetB0.h5",
         "size_mb": 25,
         "type": "tensorflow",
@@ -40,7 +40,7 @@ MODEL_URLS = {
     
     # Modelos Híbridos PyTorch (.pth)
     "HybridEnsemble": {
-        "url": "https://drive.google.com/uc?id=TU_GOOGLE_DRIVE_ID_HYBRID_ENSEMBLE",
+        "url": "https://drive.google.com/file/d/1LQczwM8EuVArccE6UgInoe-FjYfY6D7I/view?usp=drive_link",
         "filename": "ensemble_best.pth",
         "size_mb": 173,  # Tamaño aproximado
         "type": "pytorch",
@@ -49,7 +49,7 @@ MODEL_URLS = {
         "description": "Fusión inteligente ResNet50+MobileNetV2+EfficientNet con atención"
     },
     "HybridMultiScale": {
-        "url": "https://drive.google.com/uc?id=TU_GOOGLE_DRIVE_ID_HYBRID_MULTISCALE", 
+        "url": "https://drive.google.com/file/d/172JYXrEPl2cT6msR_QIj1TUArwf2U5YQ/view?usp=drive_link", 
         "filename": "multiscale_best.pth",
         "size_mb": 65,   # Tamaño aproximado
         "type": "pytorch", 
