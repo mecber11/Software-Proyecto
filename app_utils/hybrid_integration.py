@@ -7,8 +7,16 @@ import os
 import torch
 import torch.nn.functional as F
 import numpy as np
-import cv2
 from PIL import Image
+
+# Importación condicional de OpenCV para evitar conflictos
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except ImportError:
+    CV2_AVAILABLE = False
+    import warnings
+    warnings.warn("OpenCV no disponible en hybrid_integration. Algunas funciones estarán limitadas.")
 import streamlit as st
 import logging
 from pathlib import Path
@@ -127,7 +135,13 @@ class HybridModelAdapter:
                 img_rgb = img_array[:,:,:3]
             
             # Redimensionar a 224x224
-            img_resized = cv2.resize(img_rgb, (224, 224))
+            if CV2_AVAILABLE:
+                img_resized = cv2.resize(img_rgb, (224, 224))
+            else:
+                # Fallback usando PIL para redimensionar
+                pil_img = Image.fromarray(img_rgb.astype('uint8'))
+                pil_resized = pil_img.resize((224, 224), Image.Resampling.LANCZOS)
+                img_resized = np.array(pil_resized)
             
             # Normalizar usando ImageNet stats (asegurar float32 desde el inicio)
             img_normalized = img_resized.astype(np.float32) / 255.0
