@@ -1,7 +1,7 @@
 /* Importar fuentes profesionales */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-/* Variables de color - Tema Claro Mejorado */
+/* Variables de color optimizadas - Tema Oscuro */
 :root {
     --primary-color: #667eea;
     --primary-dark: #5a67d8;
@@ -10,38 +10,26 @@
     --success-color: #48bb78;
     --warning-color: #ed8936;
     --danger-color: #f56565;
-    
-    /* Tema Claro - Tonos suaves y naturales */
-    --light-bg: #f8fafc;              /* Fondo principal muy suave */
-    --lighter-bg: #f1f5f9;            /* Fondo secundario */
-    --card-bg: #ffffff;               /* Cards blancos */
-    --card-bg-light: #fefefe;         /* Cards ligeramente grises */
-    --text-primary: #1a202c;          /* Texto principal oscuro */
-    --text-secondary: #4a5568;        /* Texto secundario */
-    --text-muted: #718096;            /* Texto desactivado */
-    --border-color: #e2e8f0;          /* Bordes suaves */
-    --border-light: #cbd5e0;          /* Bordes más definidos */
-    
-    /* Sombras suaves para tema claro */
-    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    --glow-primary: 0 0 20px rgba(102, 126, 234, 0.2);
-    --glow-accent: 0 0 20px rgba(240, 147, 251, 0.2);
-    
-    /* Variables para tema oscuro (mantenidas para compatibilidad) */
     --dark-bg: #0f1419;
     --darker-bg: #0a0e13;
-    --card-bg-dark: #1a1f2e;
-    --card-bg-light-dark: #252b3d;
-    --text-primary-dark: #e2e8f0;
-    --text-secondary-dark: #a0aec0;
+    --card-bg: #1a1f2e;
+    --card-bg-light: #252b3d;
+    --text-primary: #e2e8f0;
+    --text-secondary: #a0aec0;
+    --text-muted: #718096;
+    --border-color: #2d3748;
+    --border-light: #4a5568;
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
+    --glow-primary: 0 0 20px rgba(102, 126, 234, 0.3);
+    --glow-accent: 0 0 20px rgba(240, 147, 251, 0.3);
 }
 
 /* Estilos generales */
 .stApp {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: var(--light-bg);
+    background: var(--dark-bg);
     color: var(--text-primary);
 }
 
@@ -50,17 +38,17 @@
     padding-top: 2rem;
     padding-bottom: 2rem;
     max-width: 90rem;
-    background: var(--light-bg);
+    background: var(--dark-bg);
 }
 
 /* Fondo principal de Streamlit */
 .stApp > .main {
-    background: var(--light-bg);
+    background: var(--dark-bg);
 }
 
 /* Fondo del contenido principal */
 .main .block-container {
-    background: var(--light-bg);
+    background: var(--dark-bg);
 }
 
 /* Header principal */
@@ -256,16 +244,16 @@
 
 /* Sidebar personalizado */
 .css-1d391kg, .css-1lcbmhc, .css-17eq0hr {
-    background: var(--lighter-bg) !important;
+    background: var(--darker-bg) !important;
 }
 
 /* Sidebar principal */
 section[data-testid="stSidebar"] {
-    background: var(--lighter-bg) !important;
+    background: var(--darker-bg) !important;
 }
 
 section[data-testid="stSidebar"] > div {
-    background: var(--lighter-bg) !important;
+    background: var(--darker-bg) !important;
     border-right: 2px solid var(--border-color) !important;
 }
 
@@ -445,7 +433,7 @@ section[data-testid="stSidebar"] > div {
 }
 
 .stTabs [data-baseweb="tab"]:hover {
-    background: var(--lighter-bg);
+    background: var(--light-bg);
     transform: translateY(-1px);
 }
 
