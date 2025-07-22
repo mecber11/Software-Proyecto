@@ -10,6 +10,8 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 import tempfile
 import streamlit as st
 import logging
@@ -29,10 +31,54 @@ class PDFReportGenerator:
     
     def _setup_custom_styles(self):
         """Configura estilos personalizados para el PDF"""
+        # Intentar registrar fuentes Unicode para soporte de caracteres chinos
+        try:
+            # Usar fuentes del sistema que soporten Unicode
+            # Estas son fuentes comúnmente disponibles en sistemas Windows/Linux/Mac
+            font_candidates = [
+                # Windows
+                ('NotoSansCJK', 'C:/Windows/Fonts/NotoSansCJK-Regular.ttc'),
+                ('SimHei', 'C:/Windows/Fonts/simhei.ttf'),
+                ('SimSun', 'C:/Windows/Fonts/simsun.ttc'),
+                # Linux
+                ('NotoSansCJK', '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'),
+                ('DejaVuSans', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'),
+                # Mac
+                ('PingFangSC', '/System/Library/Fonts/PingFang.ttc'),
+                ('STHeiti', '/System/Library/Fonts/STHeiti Light.ttc'),
+            ]
+            
+            self.unicode_font = None
+            for font_name, font_path in font_candidates:
+                try:
+                    if os.path.exists(font_path):
+                        pdfmetrics.registerFont(TTFont(font_name, font_path))
+                        self.unicode_font = font_name
+                        logger.info(f"Registrada fuente Unicode: {font_name}")
+                        break
+                except Exception as font_e:
+                    logger.debug(f"No se pudo registrar fuente {font_name}: {font_e}")
+                    continue
+            
+            if not self.unicode_font:
+                # Fallback: usar fuentes incorporadas de ReportLab (limitadas)
+                self.unicode_font = 'Helvetica'
+                self.unicode_font_bold = 'Helvetica-Bold'
+                logger.warning("No se encontraron fuentes Unicode, usando Helvetica (caracteres chinos pueden no mostrarse correctamente)")
+            else:
+                # Para fuentes Unicode personalizadas, usar la misma fuente para bold (la mayoría soporta bold)
+                self.unicode_font_bold = self.unicode_font
+                
+        except Exception as e:
+            logger.error(f"Error configurando fuentes Unicode: {e}")
+            self.unicode_font = 'Helvetica'
+            self.unicode_font_bold = 'Helvetica-Bold'
+        
         # Estilo para títulos principales
         self.styles.add(ParagraphStyle(
             name='CustomTitle',
             parent=self.styles['Heading1'],
+            fontName=self.unicode_font,
             fontSize=18,
             spaceAfter=30,
             alignment=TA_CENTER,
@@ -43,10 +89,25 @@ class PDFReportGenerator:
         self.styles.add(ParagraphStyle(
             name='CustomSubtitle',
             parent=self.styles['Heading2'],
+            fontName=self.unicode_font,
             fontSize=14,
             spaceAfter=20,
             textColor=colors.HexColor('#333333')
         ))
+        
+        # Actualizar estilo Normal para usar fuente Unicode
+        self.styles.add(ParagraphStyle(
+            name='UnicodeNormal',
+            parent=self.styles['Normal'],
+            fontName=self.unicode_font,
+            fontSize=10,
+            spaceAfter=12
+        ))
+    
+    def _create_unicode_table_style(self, base_style_list):
+        """Crea un estilo de tabla con soporte Unicode agregando la fuente al inicio"""
+        unicode_style = [('FONTNAME', (0, 0), (-1, -1), self.unicode_font)] + base_style_list
+        return TableStyle(unicode_style)
     
     def generate_report(self, predictions, image_info, patient_info=None, statistical_results=None, probability_fig=None, consensus_fig=None, original_image=None, enhanced_image=None, hybrid_training_info=None, hybrid_comparison_data=None):
         """
@@ -144,7 +205,7 @@ class PDFReportGenerator:
         ]
         
         info_table = Table(info_data, colWidths=[3*inch, 3*inch])
-        info_table.setStyle(TableStyle([
+        info_table.setStyle(self._create_unicode_table_style([
             ('FONTSIZE', (0, 0), (-1, -1), 10),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('GRID', (0, 0), (-1, -1), 1, colors.grey)
@@ -168,7 +229,7 @@ class PDFReportGenerator:
         ]
         
         table = Table(data, colWidths=[2*inch, 4*inch])
-        table.setStyle(TableStyle([
+        table.setStyle(self._create_unicode_table_style([
             ('FONTSIZE', (0, 0), (-1, -1), 10),
             ('GRID', (0, 0), (-1, -1), 1, colors.grey),
             ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey)
@@ -194,7 +255,7 @@ class PDFReportGenerator:
             
             if data:
                 table = Table(data, colWidths=[2*inch, 4*inch])
-                table.setStyle(TableStyle([
+                table.setStyle(self._create_unicode_table_style([
                     ('FONTSIZE', (0, 0), (-1, -1), 10),
                     ('GRID', (0, 0), (-1, -1), 1, colors.grey),
                     ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey)
@@ -283,7 +344,7 @@ class PDFReportGenerator:
                     col_widths = [3*inch]
                 
                 images_table = Table(images_data, colWidths=col_widths)
-                images_table.setStyle(TableStyle([
+                images_table.setStyle(self._create_unicode_table_style([
                     ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                     ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                     ('FONTSIZE', (0, 0), (-1, 0), 12),
@@ -299,7 +360,7 @@ class PDFReportGenerator:
                 
         except Exception as e:
             logger.error(f"Error agregando imágenes al PDF: {e}")
-            elements.append(Paragraph("Error al incluir imágenes analizadas", self.styles['Normal']))
+            elements.append(Paragraph("Error al incluir imágenes analizadas", self.styles['UnicodeNormal']))
             elements.append(Spacer(1, 20))
         
         return elements
@@ -338,7 +399,7 @@ class PDFReportGenerator:
                 ])
             
             table = Table(data, colWidths=[1.5*inch, 2.5*inch, 1*inch, 1*inch])
-            table.setStyle(TableStyle([
+            table.setStyle(self._create_unicode_table_style([
                 ('FONTSIZE', (0, 0), (-1, -1), 10),
                 ('GRID', (0, 0), (-1, -1), 1, colors.grey),
                 ('BACKGROUND', (0, 0), (-1, 0), colors.lightblue),
@@ -368,7 +429,7 @@ class PDFReportGenerator:
                 ])
             
             table = Table(data, colWidths=[1.2*inch, 2*inch, 0.8*inch, 0.8*inch, 1.2*inch])
-            table.setStyle(TableStyle([
+            table.setStyle(self._create_unicode_table_style([
                 ('FONTSIZE', (0, 0), (-1, -1), 9),
                 ('GRID', (0, 0), (-1, -1), 1, colors.grey),
                 ('BACKGROUND', (0, 0), (-1, 0), colors.lightgreen),
@@ -390,7 +451,7 @@ class PDFReportGenerator:
             • <b>Augmentación avanzada:</b> 15+ técnicas de transformación de datos
             """
             
-            elements.append(Paragraph(hybrid_info_text, self.styles['Normal']))
+            elements.append(Paragraph(hybrid_info_text, self.styles['UnicodeNormal']))
         
         elements.append(Spacer(1, 20))
         
@@ -419,7 +480,7 @@ class PDFReportGenerator:
             <b>Objetivo de precisión:</b> >90% (superando modelos clásicos)
             """
             
-            elements.append(Paragraph(general_text, self.styles['Normal']))
+            elements.append(Paragraph(general_text, self.styles['UnicodeNormal']))
             elements.append(Spacer(1, 15))
         
         # Tabla de tiempos de entrenamiento
@@ -441,7 +502,7 @@ class PDFReportGenerator:
                 ])
             
             table = Table(data, colWidths=[1.5*inch, 0.8*inch, 1*inch, 1*inch, 1.2*inch])
-            table.setStyle(TableStyle([
+            table.setStyle(self._create_unicode_table_style([
                 ('FONTSIZE', (0, 0), (-1, -1), 10),
                 ('GRID', (0, 0), (-1, -1), 1, colors.grey),
                 ('BACKGROUND', (0, 0), (-1, 0), colors.lightgreen),
@@ -468,7 +529,7 @@ class PDFReportGenerator:
             <b>Memoria GPU utilizada:</b> {details.get('gpu_memory', '~8GB de 12GB disponibles')}
             """
             
-            elements.append(Paragraph(details_text, self.styles['Normal']))
+            elements.append(Paragraph(details_text, self.styles['UnicodeNormal']))
             elements.append(Spacer(1, 15))
         
         # Comparación de rendimiento
@@ -496,7 +557,7 @@ class PDFReportGenerator:
                 ])
             
             table = Table(data, colWidths=[1.3*inch, 1.5*inch, 1*inch, 1.2*inch])
-            table.setStyle(TableStyle([
+            table.setStyle(self._create_unicode_table_style([
                 ('FONTSIZE', (0, 0), (-1, -1), 9),
                 ('GRID', (0, 0), (-1, -1), 1, colors.grey),
                 ('BACKGROUND', (0, 0), (-1, 0), colors.lightyellow),
@@ -540,7 +601,7 @@ class PDFReportGenerator:
                 <b>{self.t('risk_level')}:</b> {clinical_info.get('riesgo', 'N/A')}
                 """
                 
-                elements.append(Paragraph(result_text, self.styles['Normal']))
+                elements.append(Paragraph(result_text, self.styles['UnicodeNormal']))
                 elements.append(Spacer(1, 15))
         
         return elements
@@ -559,7 +620,7 @@ class PDFReportGenerator:
         ]
         
         for i, rec in enumerate(recommendations, 1):
-            elements.append(Paragraph(f"{i}. {rec}", self.styles['Normal']))
+            elements.append(Paragraph(f"{i}. {rec}", self.styles['UnicodeNormal']))
         
         elements.append(Spacer(1, 20))
         
@@ -575,7 +636,7 @@ class PDFReportGenerator:
         # Gráfico de probabilidades
         if probability_fig:
             try:
-                elements.append(Paragraph(self.t('probability_distribution_title'), self.styles['Normal']))
+                elements.append(Paragraph(self.t('probability_distribution_title'), self.styles['UnicodeNormal']))
                 img_bytes = pio.to_image(probability_fig, format="png", width=600, height=400)
                 img_temp = io.BytesIO(img_bytes)
                 img = RLImage(img_temp, width=5*inch, height=3.3*inch)
@@ -583,12 +644,12 @@ class PDFReportGenerator:
                 elements.append(Spacer(1, 20))
             except Exception as e:
                 logger.error(f"Error añadiendo gráfico de probabilidades: {e}")
-                elements.append(Paragraph(self.t('chart_error'), self.styles['Normal']))
+                elements.append(Paragraph(self.t('chart_error'), self.styles['UnicodeNormal']))
         
         # Gráfico de consenso
         if consensus_fig:
             try:
-                elements.append(Paragraph(self.t('model_consensus_title'), self.styles['Normal']))
+                elements.append(Paragraph(self.t('model_consensus_title'), self.styles['UnicodeNormal']))
                 img_bytes = pio.to_image(consensus_fig, format="png", width=400, height=400)
                 img_temp = io.BytesIO(img_bytes)
                 img = RLImage(img_temp, width=3*inch, height=3*inch)
@@ -596,7 +657,7 @@ class PDFReportGenerator:
                 elements.append(Spacer(1, 20))
             except Exception as e:
                 logger.error(f"Error añadiendo gráfico de consenso: {e}")
-                elements.append(Paragraph(self.t('chart_error'), self.styles['Normal']))
+                elements.append(Paragraph(self.t('chart_error'), self.styles['UnicodeNormal']))
         
         return elements
     
@@ -609,7 +670,7 @@ class PDFReportGenerator:
         
         # Matthews Correlation Coefficient
         elements.append(Paragraph(self.t('mcc_full'), self.styles['CustomSubtitle']))
-        elements.append(Paragraph(self.t('mcc_explanation'), self.styles['Normal']))
+        elements.append(Paragraph(self.t('mcc_explanation'), self.styles['UnicodeNormal']))
         elements.append(Spacer(1, 12))
         
         mcc_scores = statistical_results.get('mcc_scores', {})
@@ -621,7 +682,7 @@ class PDFReportGenerator:
                 mcc_data.append([model, f'{mcc:.4f}', interpretation])
             
             mcc_table = Table(mcc_data, colWidths=[2*inch, 1.5*inch, 1.5*inch])
-            mcc_table.setStyle(TableStyle([
+            mcc_table.setStyle(self._create_unicode_table_style([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
@@ -634,7 +695,7 @@ class PDFReportGenerator:
         # Prueba de McNemar
         elements.append(Spacer(1, 20))
         elements.append(Paragraph(self.t('mcnemar_full'), self.styles['CustomSubtitle']))
-        elements.append(Paragraph(self.t('mcnemar_explanation'), self.styles['Normal']))
+        elements.append(Paragraph(self.t('mcnemar_explanation'), self.styles['UnicodeNormal']))
         elements.append(Spacer(1, 12))
         
         mcnemar_results = statistical_results.get('mcnemar_tests', {})
@@ -684,7 +745,7 @@ class PDFReportGenerator:
             col_widths = [1.2*inch] + [col_width] * len(all_models)
             
             mcnemar_matrix = Table(mcnemar_matrix_data, colWidths=col_widths)
-            mcnemar_matrix.setStyle(TableStyle([
+            mcnemar_matrix.setStyle(self._create_unicode_table_style([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
                 ('BACKGROUND', (0, 0), (0, -1), colors.darkblue),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
@@ -697,12 +758,12 @@ class PDFReportGenerator:
             
             elements.append(mcnemar_matrix)
             elements.append(Spacer(1, 10))
-            elements.append(Paragraph(f"<i>NS: No significativo, *: p<0.05, **: p<0.01, ***: p<0.001</i>", self.styles['Normal']))
+            elements.append(Paragraph(f"<i>NS: No significativo, *: p<0.05, **: p<0.01, ***: p<0.001</i>", self.styles['UnicodeNormal']))
         
         # Prueba de Mateos
         elements.append(Spacer(1, 20))
         elements.append(Paragraph("Prueba de Mateos (Multiclase)", self.styles['CustomSubtitle']))
-        elements.append(Paragraph("La prueba de Mateos es una extensión multiclase de McNemar que evalúa diferencias significativas entre modelos considerando todas las clases simultáneamente.", self.styles['Normal']))
+        elements.append(Paragraph("La prueba de Mateos es una extensión multiclase de McNemar que evalúa diferencias significativas entre modelos considerando todas las clases simultáneamente.", self.styles['UnicodeNormal']))
         elements.append(Spacer(1, 12))
         
         mateos_results = statistical_results.get('mateos_tests', {})
@@ -726,7 +787,7 @@ class PDFReportGenerator:
                 ])
             
             mateos_table = Table(mateos_data, colWidths=[2*inch, 1.2*inch, 1*inch, 1.3*inch])
-            mateos_table.setStyle(TableStyle([
+            mateos_table.setStyle(self._create_unicode_table_style([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.darkgreen),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
@@ -742,7 +803,7 @@ class PDFReportGenerator:
         correlation_matrix = statistical_results.get('mateos_correlation_matrix', {})
         if correlation_matrix:
             elements.append(Paragraph("Matriz de Correlación de Mateos", self.styles['CustomSubtitle']))
-            elements.append(Paragraph("Coeficientes de correlación entre modelos basados en la prueba de Mateos. Valores cercanos a 1.0 indican comportamientos similares.", self.styles['Normal']))
+            elements.append(Paragraph("Coeficientes de correlación entre modelos basados en la prueba de Mateos. Valores cercanos a 1.0 indican comportamientos similares.", self.styles['UnicodeNormal']))
             elements.append(Spacer(1, 12))
             
             # Obtener modelos de la matriz
@@ -763,7 +824,7 @@ class PDFReportGenerator:
             col_widths = [1*inch] + [col_width] * len(models)
             
             correlation_table = Table(matrix_data, colWidths=col_widths)
-            correlation_table.setStyle(TableStyle([
+            correlation_table.setStyle(self._create_unicode_table_style([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.orange),
                 ('BACKGROUND', (0, 0), (0, -1), colors.orange),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
@@ -776,7 +837,7 @@ class PDFReportGenerator:
             
             elements.append(correlation_table)
             elements.append(Spacer(1, 10))
-            elements.append(Paragraph("<i>Interpretación: 1.0 = idénticos, 0.8-0.9 = muy similares, 0.5-0.7 = moderadamente similares, <0.5 = diferentes</i>", self.styles['Normal']))
+            elements.append(Paragraph("<i>Interpretación: 1.0 = idénticos, 0.8-0.9 = muy similares, 0.5-0.7 = moderadamente similares, <0.5 = diferentes</i>", self.styles['UnicodeNormal']))
         
         return elements
     
@@ -845,7 +906,7 @@ class PDFReportGenerator:
                     added_charts = True
                 
                 try:
-                    elements.append(Paragraph(title, self.styles['Normal']))
+                    elements.append(Paragraph(title, self.styles['UnicodeNormal']))
                     img = RLImage(figure_path, width=5*inch, height=3.5*inch)
                     elements.append(img)
                     elements.append(Spacer(1, 15))
@@ -876,7 +937,7 @@ class PDFReportGenerator:
                     hybrid_charts_added = True
                 
                 try:
-                    elements.append(Paragraph(title, self.styles['Normal']))
+                    elements.append(Paragraph(title, self.styles['UnicodeNormal']))
                     
                     # Ajustar tamaño según tipo de gráfico
                     if "comparison" in figure_path:
@@ -908,7 +969,7 @@ class PDFReportGenerator:
             • <b>Historiales:</b> Evolucion de precision y perdida durante entrenamiento<br/>
             • <b>Objetivo >90%:</b> Alcanzado por ambos modelos hibridos (93.2% y 90.7%)
             """
-            elements.append(Paragraph(hybrid_summary, self.styles['Normal']))
+            elements.append(Paragraph(hybrid_summary, self.styles['UnicodeNormal']))
         
         total_found = classic_found + hybrid_found
         logger.info(f"Resumen final: {total_found} gráficos encontrados ({classic_found} clásicos, {hybrid_found} híbridos)")
@@ -936,22 +997,22 @@ class PDFReportGenerator:
             parent_dir = os.path.dirname(current_dir)
             sys.path.append(parent_dir)
             
-            from app_optimized import calculate_statistical_tests, create_mcnemar_plot, create_matews_plot
+            from app_optimized import calculate_statistical_tests, create_mcnemar_matrix_plot, create_mcc_scores_plot
             
             # Calcular los tests estadísticos
-            mcnemar_results, matews_results = calculate_statistical_tests(hybrid_comparison_data)
+            mcnemar_results, mcc_scores = calculate_statistical_tests(hybrid_comparison_data)
             
             if mcnemar_results:
                 # Sección McNemar
                 elements.append(Paragraph("Test de McNemar", self.styles['CustomSubtitle']))
                 elements.append(Paragraph(
                     "El test de McNemar evalúa si existe una diferencia significativa entre las predicciones de dos modelos en el mismo conjunto de datos.",
-                    self.styles['Normal']
+                    self.styles['UnicodeNormal']
                 ))
                 elements.append(Spacer(1, 10))
                 
-                # Crear gráfico McNemar
-                mcnemar_fig = create_mcnemar_plot(mcnemar_results)
+                # Crear matriz McNemar
+                mcnemar_fig = create_mcnemar_matrix_plot(mcnemar_results)
                 if mcnemar_fig:
                     img_buffer = io.BytesIO()
                     mcnemar_fig.write_image(img_buffer, format='png', width=800, height=600)
@@ -965,25 +1026,36 @@ class PDFReportGenerator:
                         elements.append(Spacer(1, 20))
                     except Exception as e:
                         logger.error(f"Error agregando imagen McNemar al PDF: {e}")
-                        elements.append(Paragraph("Error al cargar gráfico McNemar", self.styles['Normal']))
+                        elements.append(Paragraph("Error al cargar gráfico McNemar", self.styles['UnicodeNormal']))
                         elements.append(Spacer(1, 20))
                 
                 # Tabla de resultados McNemar
-                mcnemar_data = [['Comparación', 'Estadístico', 'p-valor', 'Significativo']]
+                mcnemar_data = [['Comparación', 'Ganador', 'p-valor', 'Significativo', 'Interpretación']]
                 for result in mcnemar_results:
+                    winner = result.get('winner', 'empate')
+                    if winner == 'modelo1':
+                        winner_text = result['model1']
+                    elif winner == 'modelo2':
+                        winner_text = result['model2']
+                    else:
+                        winner_text = 'Empate'
+                    
+                    interpretation = 'Diferencia significativa' if result['significant'] else 'Sin diferencia significativa'
+                    
                     mcnemar_data.append([
-                        result['comparison'],
-                        f"{result['statistic']:.4f}",
+                        result['comparison'].replace('_vs_', ' vs '),
+                        winner_text,
                         f"{result['p_value']:.4f}",
-                        "Sí" if result['significant'] else "No"
+                        "Sí" if result['significant'] else "No",
+                        interpretation
                     ])
                 
                 mcnemar_table = Table(mcnemar_data)
-                mcnemar_table.setStyle(TableStyle([
+                mcnemar_table.setStyle(self._create_unicode_table_style([
                     ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0066CC')),
                     ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                     ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTNAME', (0, 0), (-1, 0), self.unicode_font_bold),
                     ('FONTSIZE', (0, 0), (-1, 0), 10),
                     ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
                     ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
@@ -992,20 +1064,20 @@ class PDFReportGenerator:
                 elements.append(mcnemar_table)
                 elements.append(Spacer(1, 30))
             
-            if matews_results:
-                # Sección Matews
-                elements.append(Paragraph("Test de Matews (Extensión Multiclase)", self.styles['CustomSubtitle']))
+            if mcc_scores:
+                # Sección MCC Scores
+                elements.append(Paragraph("Matthews Correlation Coefficient (MCC) por Modelo", self.styles['CustomSubtitle']))
                 elements.append(Paragraph(
-                    "El test de Matews es una extensión del test de McNemar para problemas de clasificación multiclase, comparando el rendimiento de modelos usando el Matthews Correlation Coefficient (MCC).",
-                    self.styles['Normal']
+                    "Los MCC scores muestran la calidad de cada modelo individualmente. El MCC es una métrica balanceada que considera verdaderos/falsos positivos y negativos, proporcionando una evaluación robusta del rendimiento del modelo.",
+                    self.styles['UnicodeNormal']
                 ))
                 elements.append(Spacer(1, 10))
                 
-                # Crear gráfico Matews
-                matews_fig = create_matews_plot(matews_results)
-                if matews_fig:
+                # Crear gráfico de MCC Scores
+                mcc_fig = create_mcc_scores_plot(mcc_scores)
+                if mcc_fig:
                     img_buffer = io.BytesIO()
-                    matews_fig.write_image(img_buffer, format='png', width=800, height=600)
+                    mcc_fig.write_image(img_buffer, format='png', width=800, height=600)
                     img_buffer.seek(0)
                     
                     try:
@@ -1015,99 +1087,58 @@ class PDFReportGenerator:
                         elements.append(img)
                         elements.append(Spacer(1, 20))
                     except Exception as e:
-                        logger.error(f"Error agregando imagen Matews al PDF: {e}")
-                        elements.append(Paragraph("Error al cargar gráfico Matews", self.styles['Normal']))
+                        logger.error(f"Error agregando imagen MCC al PDF: {e}")
+                        elements.append(Paragraph("Error al cargar gráfico MCC", self.styles['UnicodeNormal']))
                         elements.append(Spacer(1, 20))
                 
-                # Crear matriz Matews (deshabilitada temporalmente por problemas con archivos temporales)
-                elements.append(Paragraph("Matriz de Comparación Matews", self.styles['CustomSubtitle']))
+                # Tabla de MCC Scores individuales
+                elements.append(Paragraph("Tabla de MCC Scores por Modelo", self.styles['CustomSubtitle']))
                 elements.append(Paragraph(
-                    "La matriz de comparación Matews muestra las correlaciones MCC entre todos los pares de modelos. "
-                    "Consulte la aplicación web para ver la visualización interactiva de esta matriz.",
-                    self.styles['Normal']
+                    "Resumen de los scores MCC individuales de cada modelo evaluado. Los valores MCC van de -1 a 1, donde 1 indica una predicción perfecta.",
+                    self.styles['UnicodeNormal']
                 ))
                 elements.append(Spacer(1, 10))
                 
-                # Crear tabla resumen de la matriz como alternativa
-                try:
-                    from app_optimized import create_matews_matrix_plot
+                # Crear tabla de MCC scores
+                mcc_data = [['Modelo', 'MCC Score', 'Calidad']]
+                for model_name, mcc_score in mcc_scores.items():
+                    if mcc_score > 0.8:
+                        quality = "Excelente"
+                    elif mcc_score > 0.6:
+                        quality = "Bueno"
+                    elif mcc_score > 0.4:
+                        quality = "Regular"
+                    else:
+                        quality = "Malo"
                     
-                    # Crear datos resumidos de la matriz
-                    all_models = set()
-                    for result in matews_results:
-                        comp = result["comparison"]
-                        model1, model2 = comp.split("_vs_")
-                        all_models.add(model1)
-                        all_models.add(model2)
-                    
-                    model_list = sorted(list(all_models))
-                    
-                    matrix_summary_data = [['Modelo 1', 'Modelo 2', 'MCC Correlación', 'p-valor', 'Significativo']]
-                    for result in matews_results:
-                        comp = result["comparison"]
-                        model1, model2 = comp.split("_vs_")
-                        matrix_summary_data.append([
-                            model1,
-                            model2,
-                            f"{result.get('matews_correlation', 0.0):.4f}",
-                            f"{result.get('p_value', 1.0):.4f}",
-                            "Sí" if result.get('significant', False) else "No"
-                        ])
-                    
-                    matrix_summary_table = Table(matrix_summary_data)
-                    matrix_summary_table.setStyle(TableStyle([
-                        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0066CC')),
-                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                        ('FONTSIZE', (0, 0), (-1, 0), 9),
-                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                        ('GRID', (0, 0), (-1, -1), 1, colors.black)
-                    ]))
-                    elements.append(matrix_summary_table)
-                    elements.append(Spacer(1, 20))
-                    
-                except Exception as matrix_e:
-                    logger.error(f"Error creando resumen de matriz Matews: {matrix_e}")
-                    elements.append(Paragraph(
-                        "Error: No se pudo generar el resumen de la matriz de comparación Matews.",
-                        self.styles['Normal']
-                    ))
-                    elements.append(Spacer(1, 20))
-                
-                # Tabla de resultados Matews
-                matews_data = [['Comparación', 'MCC Modelo 1', 'MCC Modelo 2', 'Estadístico', 'p-valor', 'Significativo']]
-                for result in matews_results:
-                    matews_data.append([
-                        result['comparison'],
-                        f"{result.get('mcc1', 0.0):.4f}",
-                        f"{result.get('mcc2', 0.0):.4f}",
-                        f"{result['statistic']:.4f}",
-                        f"{result['p_value']:.4f}",
-                        "Sí" if result['significant'] else "No"
+                    mcc_data.append([
+                        model_name,
+                        f"{mcc_score:.4f}",
+                        quality
                     ])
                 
-                matews_table = Table(matews_data)
-                matews_table.setStyle(TableStyle([
+                mcc_table = Table(mcc_data)
+                mcc_table.setStyle(self._create_unicode_table_style([
                     ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0066CC')),
                     ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                     ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                    ('FONTSIZE', (0, 0), (-1, 0), 9),
+                    ('FONTNAME', (0, 0), (-1, 0), self.unicode_font_bold),
+                    ('FONTSIZE', (0, 0), (-1, 0), 10),
                     ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
                     ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
                     ('GRID', (0, 0), (-1, -1), 1, colors.black)
                 ]))
-                elements.append(matews_table)
+                elements.append(mcc_table)
                 elements.append(Spacer(1, 20))
+                
             
             # Interpretación de resultados
             elements.append(Paragraph("Interpretación de Resultados Estadísticos", self.styles['CustomSubtitle']))
             elements.append(Paragraph(
-                "Un p-valor < 0.05 indica que existe una diferencia estadísticamente significativa entre los modelos comparados. "
-                "Los tests estadísticos ayudan a validar objetivamente si las diferencias observadas en precisión son reales o podrían deberse al azar.",
-                self.styles['Normal']
+                "El Test de McNemar evalúa diferencias significativas entre modelos por pares (p < 0.05 = diferencia significativa). "
+                "Los MCC Scores individuales muestran la calidad de cada modelo: >0.8 = Excelente, >0.6 = Bueno, >0.4 = Regular, <0.4 = Malo. "
+                "Estos análisis proporcionan una evaluación objetiva y estadísticamente respaldada del rendimiento de cada modelo.",
+                self.styles['UnicodeNormal']
             ))
             elements.append(Spacer(1, 20))
             
@@ -1115,7 +1146,7 @@ class PDFReportGenerator:
             logger.error(f"Error generando sección de tests estadísticos: {e}")
             elements.append(Paragraph(
                 "Error: No se pudieron generar los tests estadísticos para este reporte.",
-                self.styles['Normal']
+                self.styles['UnicodeNormal']
             ))
             elements.append(Spacer(1, 20))
         
@@ -1126,7 +1157,7 @@ class PDFReportGenerator:
         elements = []
         
         elements.append(Paragraph(self.t('important_notice'), self.styles['CustomSubtitle']))
-        elements.append(Paragraph(self.t('disclaimer_text'), self.styles['Normal']))
+        elements.append(Paragraph(self.t('disclaimer_text'), self.styles['UnicodeNormal']))
         
         return elements
 
