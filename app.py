@@ -311,27 +311,57 @@ def create_comparison_interactive_plots(comparison_data):
 def mcnemar_test(y_true, y_pred1, y_pred2):
     """Test de McNemar para comparar dos modelos"""
     try:
-        # Tabla de contingencia
-        b = sum((y_pred1 == y_true) & (y_pred2 != y_true))  # Solo modelo1 correcto
-        c = sum((y_pred1 != y_true) & (y_pred2 == y_true))  # Solo modelo2 correcto
+        # Tabla de contingencia 2x2 para McNemar
+        # a: ambos correctos, b: solo modelo1 correcto, c: solo modelo2 correcto, d: ambos incorrectos
+        correct1 = (y_pred1 == y_true)
+        correct2 = (y_pred2 == y_true)
         
-        # Fórmula de McNemar
+        a = np.sum(correct1 & correct2)   # Ambos correctos
+        b = np.sum(correct1 & ~correct2)  # Solo modelo1 correcto
+        c = np.sum(~correct1 & correct2)  # Solo modelo2 correcto
+        d = np.sum(~correct1 & ~correct2) # Ambos incorrectos
+        
+        # Estadística de McNemar (con corrección de continuidad para muestras pequeñas)
         if (b + c) == 0:
-            statistic = 0
+            statistic = 0.0
             p_value = 1.0
+            winner = "empate"
         else:
-            statistic = (b - c)**2 / (b + c)
+            # Corrección de continuidad de Yates si b+c < 25
+            if (b + c) < 25:
+                statistic = (abs(b - c) - 1)**2 / (b + c)
+            else:
+                statistic = (b - c)**2 / (b + c)
+            
             p_value = 1 - chi2.cdf(statistic, 1)
+            
+            # Determinar ganador
+            if b > c:
+                winner = "modelo1"  # Modelo1 tiene más aciertos únicos
+            elif c > b:
+                winner = "modelo2"  # Modelo2 tiene más aciertos únicos  
+            else:
+                winner = "empate"   # Igual número de aciertos únicos
         
         significant = p_value < 0.05
+        
+        # Calcular accuracy de cada modelo para referencia
+        acc1 = np.mean(correct1)
+        acc2 = np.mean(correct2)
         
         return {
             "statistic": statistic,
             "p_value": p_value,
+            "contingency_table": [[a, b], [c, d]],
             "b": int(b), 
             "c": int(c),
+            "a": int(a),
+            "d": int(d),
             "significant": significant,
-            "interpretation": f"p={p_value:.4f}, {'significativo' if significant else 'no significativo'}"
+            "winner": winner,
+            "model1_accuracy": acc1,
+            "model2_accuracy": acc2,
+            "interpretation": f"p={p_value:.4f}, {'significativo' if significant else 'no significativo'}, ganador: {winner}"
         }
     except Exception as e:
         st.error(f"Error en test McNemar: {e}")
@@ -381,112 +411,181 @@ def matews_test(y_true, y_pred1, y_pred2):
         st.error(f"Error en test Matews: {e}")
         return None
 
-def create_mcnemar_plot(mcnemar_results):
-    """Crear gráfico de resultados McNemar"""
+def create_mcnemar_matrix_plot(mcnemar_results):
+    """Crear matriz de comparación McNemar entre modelos"""
     try:
-        if not mcnemar_results:
+        if not mcnemar_results or len(mcnemar_results) == 0:
             return None
         
-        comparisons = [result["comparison"] for result in mcnemar_results]
-        p_values = [result["p_value"] for result in mcnemar_results]
-        significant = [result["significant"] for result in mcnemar_results]
+        # Extraer todos los modelos únicos
+        all_models = set()
+        for result in mcnemar_results:
+            all_models.add(result["model1"])
+            all_models.add(result["model2"])
         
-        # Colores según significancia
-        colors = ['red' if sig else 'green' for sig in significant]
+        model_list = sorted(list(all_models))
+        n_models = len(model_list)
+        
+        if n_models < 2:
+            return None
+        
+        # Crear matrices completas (simetricas)
+        pvalue_matrix = np.ones((n_models, n_models))  # Diagonal = 1.0 (no significativo)
+        winner_matrix = np.full((n_models, n_models), "", dtype=object)  # Matriz de ganadores
+        
+        # Llenar las matrices con datos de comparaciones
+        for result in mcnemar_results:
+            model1 = result["model1"]
+            model2 = result["model2"]
+            
+            i = model_list.index(model1)
+            j = model_list.index(model2)
+            
+            p_val = result.get("p_value", 1.0)
+            winner = result.get("winner", "empate")
+            
+            # Llenar ambos triángulos para matriz simétrica
+            pvalue_matrix[i, j] = p_val
+            pvalue_matrix[j, i] = p_val
+            
+            # Determinar ganador para la celda [i,j]
+            if winner == "modelo1":
+                winner_matrix[i, j] = f"✓ {model1}"  # Modelo1 gana
+                winner_matrix[j, i] = f"✗ {model2}"  # Modelo2 pierde
+            elif winner == "modelo2":
+                winner_matrix[i, j] = f"✗ {model1}"  # Modelo1 pierde  
+                winner_matrix[j, i] = f"✓ {model2}"  # Modelo2 gana
+            else:
+                winner_matrix[i, j] = "≈ empate"     # Empate
+                winner_matrix[j, i] = "≈ empate"     # Empate
+        
+        # Crear texto para cada celda
+        text_matrix = []
+        for i in range(n_models):
+            row_text = []
+            for j in range(n_models):
+                if i == j:
+                    text = f"<b>{model_list[i]}</b>"  # Diagonal - nombre del modelo
+                else:
+                    p_val = pvalue_matrix[i, j]
+                    winner_text = winner_matrix[i, j]
+                    sig_text = "Sig" if p_val < 0.05 else "NS"
+                    text = f"{winner_text}<br>p: {p_val:.4f} ({sig_text})"
+                row_text.append(text)
+            text_matrix.append(row_text)
+        
+        # Crear figura
+        fig = go.Figure(data=go.Heatmap(
+            z=pvalue_matrix,
+            x=model_list,
+            y=model_list,
+            text=text_matrix,
+            texttemplate="%{text}",
+            textfont={"size": 8},
+            colorscale="RdYlBu_r",
+            zmin=0,
+            zmax=0.1,  # Enfocar en p-values relevantes
+            colorbar=dict(title="p-value")
+        ))
+        
+        # Agregar bordes verdes para diferencias significativas (ganador)
+        for result in mcnemar_results:
+            if result.get("significant", False):
+                model1 = result["model1"]
+                model2 = result["model2"]
+                winner = result.get("winner", "empate")
+                
+                i = model_list.index(model1)
+                j = model_list.index(model2)
+                
+                # Borde verde para el ganador
+                if winner == "modelo1":
+                    fig.add_shape(
+                        type="rect",
+                        x0=j-0.4, y0=i-0.4,
+                        x1=j+0.4, y1=i+0.4,
+                        line=dict(color="green", width=3),
+                        fillcolor="rgba(0,255,0,0.1)"
+                    )
+                elif winner == "modelo2":
+                    fig.add_shape(
+                        type="rect",
+                        x0=i-0.4, y0=j-0.4,
+                        x1=i+0.4, y1=j+0.4,
+                        line=dict(color="green", width=3),
+                        fillcolor="rgba(0,255,0,0.1)"
+                    )
+        
+        fig.update_layout(
+            title="Matriz de McNemar - Comparaciones por Pares<br><sub>✓ = Ganador, ✗ = Perdedor, ≈ = Empate | Verde: diferencias significativas (p<0.05)</sub>",
+            width=700,
+            height=700,
+            xaxis=dict(title="Modelo"),
+            yaxis=dict(title="Modelo", autorange="reversed"),
+            font=dict(size=10)
+        )
+        
+        return fig
+        
+    except Exception as e:
+        logger.error(f"Error creando matriz McNemar: {e}")
+        return None
+
+def create_mcc_scores_plot(mcc_scores):
+    """Crear gráfico de barras con MCC scores individuales ya calculados"""
+    try:
+        if not mcc_scores:
+            return None
+        
+        models = list(mcc_scores.keys())
+        mcc_values = list(mcc_scores.values())
+        
+        # Colores según calidad del MCC
+        colors = []
+        for mcc in mcc_values:
+            if mcc > 0.8:
+                colors.append('#00D25B')  # Verde - Excelente
+            elif mcc > 0.6:
+                colors.append('#FFAB00')  # Amarillo - Bueno
+            elif mcc > 0.4:
+                colors.append('#FF6B6B')  # Rojo claro - Regular
+            else:
+                colors.append('#FC424A')  # Rojo - Malo
         
         # Crear gráfico de barras
         fig = go.Figure(data=[
             go.Bar(
-                x=[comp.replace('_vs_', ' vs ') for comp in comparisons],
-                y=p_values,
+                x=models,
+                y=mcc_values,
                 marker_color=colors,
-                text=[f"p={p:.4f}" for p in p_values],
+                text=[f"MCC: {mcc:.3f}" for mcc in mcc_values],
                 textposition='auto',
             )
         ])
         
-        # Línea de significancia
-        fig.add_hline(y=0.05, line_dash="dash", line_color="black", 
-                     annotation_text="α = 0.05", annotation_position="top right")
+        # Líneas de referencia
+        fig.add_hline(y=0.8, line_dash="dash", line_color="green", 
+                     annotation_text="Excelente (0.8+)", annotation_position="top right")
+        fig.add_hline(y=0.6, line_dash="dash", line_color="orange", 
+                     annotation_text="Bueno (0.6+)", annotation_position="top right")
+        fig.add_hline(y=0.4, line_dash="dash", line_color="red", 
+                     annotation_text="Regular (0.4+)", annotation_position="top right")
         
         fig.update_layout(
-            title="Test de McNemar - Comparación de Modelos",
-            xaxis_title="Comparaciones",
-            yaxis_title="p-value",
+            title="Matthews Correlation Coefficient (MCC) por Modelo<br><sub>Valores ya calculados individualmente - No es comparación por pares</sub>",
+            xaxis_title="Modelos",
+            yaxis_title="MCC Score",
             showlegend=False,
-            height=500
-        )
-        
-        fig.update_xaxes(tickangle=45)
-        
-        return fig
-        
-    except Exception as e:
-        st.error(f"Error creando gráfico McNemar: {e}")
-        return None
-
-def create_matews_plot(matews_results):
-    """Crear gráfico de resultados Matews"""
-    try:
-        if not matews_results:
-            return None
-        
-        comparisons = [result["comparison"] for result in matews_results]
-        p_values = [result["p_value"] for result in matews_results]
-        mcc_values = [result["matews_correlation"] for result in matews_results]
-        significant = [result["significant"] for result in matews_results]
-        
-        # Crear subplots
-        fig = make_subplots(
-            rows=1, cols=2,
-            subplot_titles=('p-values de Matews', 'Correlación de Matews (MCC)'),
-            specs=[[{"type": "bar"}, {"type": "bar"}]]
-        )
-        
-        # p-values
-        colors_p = ['red' if sig else 'green' for sig in significant]
-        fig.add_trace(
-            go.Bar(
-                x=[comp.replace('_vs_', ' vs ') for comp in comparisons],
-                y=p_values,
-                marker_color=colors_p,
-                name='p-value',
-                text=[f"p={p:.4f}" for p in p_values],
-                textposition='auto',
-            ),
-            row=1, col=1
-        )
-        
-        # MCC values
-        fig.add_trace(
-            go.Bar(
-                x=[comp.replace('_vs_', ' vs ') for comp in comparisons],
-                y=mcc_values,
-                marker_color='blue',
-                name='MCC',
-                text=[f"MCC={mcc:.4f}" for mcc in mcc_values],
-                textposition='auto',
-            ),
-            row=1, col=2
-        )
-        
-        # Línea de significancia
-        fig.add_hline(y=0.05, line_dash="dash", line_color="black", row=1, col=1)
-        
-        fig.update_layout(
-            title="Test de Matews - Comparación de Modelos",
             height=500,
-            showlegend=False
+            yaxis=dict(range=[0, 1])
         )
         
         fig.update_xaxes(tickangle=45)
-        fig.update_yaxes(title_text="p-value", row=1, col=1)
-        fig.update_yaxes(title_text="Correlación MCC", row=1, col=2)
         
         return fig
         
     except Exception as e:
-        st.error(f"Error creando gráfico Matews: {e}")
+        logger.error(f"Error creando gráfico MCC: {e}")
         return None
 
 def create_matews_matrix_plot(matews_results):
@@ -605,9 +704,13 @@ def calculate_statistical_tests(comparison_data):
         model_names = list(modelos_detallados.keys())
         
         mcnemar_results = []
-        matews_results = []
+        mcc_scores = {}
         
-        # Comparar cada par de modelos
+        # Extraer MCC scores ya calculados (no recalcular)
+        for model_name, model_data in modelos_detallados.items():
+            mcc_scores[model_name] = model_data.get('mcc', 0.0)
+        
+        # Comparar cada par de modelos solo para McNemar (sin duplicados)
         for i, model1 in enumerate(model_names):
             for j, model2 in enumerate(model_names[i+1:], i+1):
                 comparison_key = f"{model1}_vs_{model2}"
@@ -627,21 +730,16 @@ def calculate_statistical_tests(comparison_data):
                     y_pred1 = y_pred1[:min_len]
                     y_pred2 = y_pred2[:min_len]
                     
-                    # Calcular tests
+                    # Solo calcular McNemar
                     mcnemar_result = mcnemar_test(y_true, y_pred1, y_pred2)
-                    matews_result = matews_test(y_true, y_pred1, y_pred2)
                     
                     if mcnemar_result:
                         mcnemar_result['comparison'] = comparison_key
+                        mcnemar_result['model1'] = model1
+                        mcnemar_result['model2'] = model2
                         mcnemar_results.append(mcnemar_result)
-                    if matews_result:
-                        matews_result['comparison'] = comparison_key
-                        # Agregar MCCs individuales desde los datos
-                        matews_result['mcc1'] = model1_data.get('mcc', 0.0)
-                        matews_result['mcc2'] = model2_data.get('mcc', 0.0)
-                        matews_results.append(matews_result)
         
-        return mcnemar_results, matews_results
+        return mcnemar_results, mcc_scores
         
     except Exception as e:
         st.error(f"Error calculando tests estadísticos: {e}")
@@ -780,60 +878,73 @@ def display_hybrid_comparison_results(comparison_data, t):
             st.error(f"Error: comparison_data tiene tipo {type(comparison_data)} en lugar de dict")
             return
             
-        mcnemar_results, matews_results = calculate_statistical_tests(comparison_data)
+        mcnemar_results, mcc_scores = calculate_statistical_tests(comparison_data)
         
-        if mcnemar_results and matews_results:
-            tab1, tab2, tab3 = st.tabs(["Test de McNemar", "Test de Matews", "Matriz Matews"])
+        if mcnemar_results or mcc_scores:
+            tab1, tab2 = st.tabs(["📊 MCC Scores Individuales", "🔬 Test de McNemar"])
             
             with tab1:
-                st.markdown("**Test de McNemar para comparaciones por pares**")
-                mcnemar_fig = create_mcnemar_plot(mcnemar_results)
-                if mcnemar_fig:
-                    st.plotly_chart(mcnemar_fig, use_container_width=True)
+                st.markdown("**Matthews Correlation Coefficient (MCC) por Modelo**")
+                st.markdown("Los MCC scores muestran la calidad de cada modelo individualmente. No son comparaciones por pares.")
                 
-                # Mostrar tabla de resultados
+                if mcc_scores:
+                    mcc_fig = create_mcc_scores_plot(mcc_scores)
+                    if mcc_fig:
+                        st.plotly_chart(mcc_fig, use_container_width=True)
+                    
+                    # Mostrar tabla de MCC scores
+                    df_mcc = pd.DataFrame([
+                        {
+                            'Modelo': model,
+                            'MCC Score': f"{mcc:.4f}",
+                            'Interpretación': "Excelente" if mcc > 0.8 else "Bueno" if mcc > 0.6 else "Regular" if mcc > 0.4 else "Malo"
+                        }
+                        for model, mcc in sorted(mcc_scores.items(), key=lambda x: x[1], reverse=True)
+                    ])
+                    st.dataframe(df_mcc, use_container_width=True)
+                else:
+                    st.info("No hay datos de MCC disponibles.")
+            
+            with tab2:
+                st.markdown("**Test de McNemar - Comparaciones por Pares de Modelos**")
+                st.markdown("El test de McNemar evalúa si existe diferencia significativa entre el rendimiento de dos modelos.")
+                
                 if mcnemar_results:
+                    # Matriz de McNemar
+                    mcnemar_matrix_fig = create_mcnemar_matrix_plot(mcnemar_results)
+                    if mcnemar_matrix_fig:
+                        st.plotly_chart(mcnemar_matrix_fig, use_container_width=True)
+                    
+                    # Mostrar tabla de resultados de McNemar
                     df_mcnemar = pd.DataFrame([
                         {
-                            'Comparación': result['comparison'],
-                            'Estadístico': f"{result['statistic']:.4f}",
+                            'Comparación': result['comparison'].replace('_vs_', ' vs '),
+                            'Modelo 1': result['model1'],
+                            'Acc. Modelo 1': f"{result.get('model1_accuracy', 0):.3f}",
+                            'Modelo 2': result['model2'], 
+                            'Acc. Modelo 2': f"{result.get('model2_accuracy', 0):.3f}",
+                            'Ganador': result.get('winner', 'empate'),
                             'p-valor': f"{result['p_value']:.4f}",
-                            'Significativo': "Sí" if result['significant'] else "No"
+                            'Significativo': "Sí" if result['significant'] else "No",
+                            'Solo M1 correcto (b)': result.get('b', 0),
+                            'Solo M2 correcto (c)': result.get('c', 0),
+                            'Interpretación': f"{'Diferencia significativa' if result['significant'] else 'Sin diferencia significativa'} - {result.get('winner', 'empate')} es mejor" if result.get('winner') not in ['empate', None] else 'Sin diferencia significativa'
                         }
                         for result in mcnemar_results
                     ])
                     st.dataframe(df_mcnemar, use_container_width=True)
-            
-            with tab2:
-                st.markdown("**Test de Matews (extensión multiclase)**")
-                matews_fig = create_matews_plot(matews_results)
-                if matews_fig:
-                    st.plotly_chart(matews_fig, use_container_width=True)
-                
-                # Mostrar tabla de resultados
-                if matews_results:
-                    df_matews = pd.DataFrame([
-                        {
-                            'Comparación': result['comparison'],
-                            'MCC Modelo 1': f"{result.get('mcc1', 0.0):.4f}",
-                            'MCC Modelo 2': f"{result.get('mcc2', 0.0):.4f}",
-                            'Estadístico': f"{result['statistic']:.4f}",
-                            'p-valor': f"{result['p_value']:.4f}",
-                            'Significativo': "Sí" if result['significant'] else "No"
-                        }
-                        for result in matews_results
-                    ])
-                    st.dataframe(df_matews, use_container_width=True)
-            
-            with tab3:
-                st.markdown("**Matriz de Comparación Matews entre Modelos**")
-                st.markdown("Esta matriz muestra las correlaciones MCC entre todos los pares de modelos. Los bordes rojos indican diferencias estadísticamente significativas.")
-                
-                matews_matrix_fig = create_matews_matrix_plot(matews_results)
-                if matews_matrix_fig:
-                    st.plotly_chart(matews_matrix_fig, use_container_width=True)
+                    
+                    # Explicación mejorada
+                    st.info("""
+                    💡 **Interpretación del Test de McNemar**:
+                    - **p < 0.05**: Diferencia significativa entre modelos
+                    - **Ganador**: Modelo con más aciertos únicos (b vs c)
+                    - **b**: Casos donde solo Modelo 1 acertó y Modelo 2 falló
+                    - **c**: Casos donde solo Modelo 2 acertó y Modelo 1 falló
+                    - Si b > c: Modelo 1 es mejor | Si c > b: Modelo 2 es mejor
+                    """)
                 else:
-                    st.error("No se pudo generar la matriz de comparación Matews")
+                    st.info("No hay comparaciones de McNemar disponibles.")
         else:
             st.info("Los tests estadísticos requieren datos de predicciones completos.")
     except Exception as e:
