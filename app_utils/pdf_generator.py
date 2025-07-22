@@ -997,7 +997,7 @@ class PDFReportGenerator:
             parent_dir = os.path.dirname(current_dir)
             sys.path.append(parent_dir)
             
-            from app_optimized import calculate_statistical_tests, create_mcnemar_matrix_plot, create_mcc_scores_plot
+            from app import calculate_statistical_tests, create_mcnemar_matrix_plot, create_mcc_scores_plot
             
             # Calcular los tests estadísticos
             mcnemar_results, mcc_scores = calculate_statistical_tests(hybrid_comparison_data)
